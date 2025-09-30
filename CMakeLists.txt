@@ -31,14 +31,18 @@ target_include_directories(
 # Python bindings (optional, only if pybind11 is available)
 find_package(pybind11 QUIET)
 if(pybind11_FOUND)
+    # Add this line to define Python variables such as Python_SITEARCH
+    find_package(Python COMPONENTS Interpreter Development REQUIRED)
+
     pybind11_add_module(simple_image_recon python/pybind11_bindings.cpp)
     target_link_libraries(simple_image_recon PRIVATE ${PROJECT_NAME})
     target_include_directories(simple_image_recon PRIVATE include)
-    
-    # Install Python module
+
+    # Install Python module to the correct site-packages directory
     install(TARGETS simple_image_recon
             LIBRARY DESTINATION ${Python_SITEARCH})
 endif()
+
 
 # Original install commands
 install(TARGETS ${PROJECT_NAME}
