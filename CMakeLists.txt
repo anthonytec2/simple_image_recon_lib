@@ -14,17 +14,13 @@
 # limitations under the License.
 
 cmake_minimum_required(VERSION 3.16)
-
 project(simple_image_recon_lib VERSION 1.0 LANGUAGES CXX)
-
 include(CMakePackageConfigHelpers)
-include (GNUInstallDirs)
+include(GNUInstallDirs)
 
-
-# set(CMAKE_CXX_CLANG_TIDY clang-tidy)
-
+# Original library
 add_library(${PROJECT_NAME} SHARED src/simple_image_reconstructor.cpp)
-set_target_properties(${PROJECT_NAME} PROPERTIES  CXX_STANDARD 14)
+set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 14)
 target_include_directories(
     ${PROJECT_NAME}
   PUBLIC
@@ -32,39 +28,47 @@ target_include_directories(
     $<INSTALL_INTERFACE:include>
 )
 
+# Python bindings (optional, only if pybind11 is available)
+find_package(pybind11 QUIET)
+if(pybind11_FOUND)
+    pybind11_add_module(simple_image_recon python/pybind11_bindings.cpp)
+    target_link_libraries(simple_image_recon PRIVATE ${PROJECT_NAME})
+    target_include_directories(simple_image_recon PRIVATE include)
+    
+    # Install Python module
+    install(TARGETS simple_image_recon
+            LIBRARY DESTINATION ${Python_SITEARCH})
+endif()
+
+# Original install commands
 install(TARGETS ${PROJECT_NAME}
   EXPORT ${PROJECT_NAME}Targets
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   INCLUDES DESTINATION include
-  )
+)
 
 install(DIRECTORY include/
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
-# generate the ConfigVersion.cmake file that will be included by Config.cmake
 write_basic_package_version_file(
   ${PROJECT_NAME}ConfigVersion.cmake
   VERSION ${PACKAGE_VERSION}
   COMPATIBILITY AnyNewerVersion
-  )
+)
 
-# generate the *Config.cmake file
 configure_file(cmake/${PROJECT_NAME}Config.cmake.in ${PROJECT_NAME}Config.cmake @ONLY)
 
-# generate Targets.cmake file from exports learned during the installation
 install(EXPORT ${PROJECT_NAME}Targets
   FILE ${PROJECT_NAME}Targets.cmake
   NAMESPACE ${PROJECT_NAME}::
   DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
-  )
+)
 
-# install the generated version and config files
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
               "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
-        )
+)
 
-# Packaging support
 set(CPACK_PACKAGE_VENDOR "${PROJECT_NAME}")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "simple image reconstruction from events")
 set(CPACK_PACKAGE_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
